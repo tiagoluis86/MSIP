@@ -5,7 +5,7 @@
 o que faz
 ------------------------------------------
 
-atuaalmente interpreta inputs de strings como válidos ou não, aplicando operações matemáticas de acordo
+atualmente interpreta inputs de strings como válidos ou não, aplicando operações matemáticas de acordo
 
 o que vai fazer
 --------------------------------------------
