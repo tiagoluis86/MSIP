@@ -86,39 +86,34 @@ class Interpreter(object):
         else:
             self.error()
 
+    def term(self):
+        """
+        Retorna um token INT
+        """
+        token = self.current_token
+        self.eat(INTEGER)
+        return token.value
+
     def expr(self):
         """
-        expr -> INTEGER PLUS INTEGER
-        expr -> INTEGER MINUS INTEGER
-        seta o token atual como o primeiro token pegado do input
+        Parser / Interpreter
+        Seta o token atual como o primeiro token a ser pego do input
         """
         self.current_token = self.gen_next_token()
 
-        #a esperança é o que o token seja um INT
-        left = self.current_token
-        self.eat(INTEGER)
+        result = self.term()
 
-        #se espera que o token seja um "+" ou "-"
-        op = self.current_token
-        if op.type == PLUS:
-            self.eat(PLUS)
-        else:
-            self.eat(MINUS)
+        while self.current_token.type in (PLUS, MINUS):
+            token = self.current_token
+            if token.type == PLUS:
+                self.eat(PLUS)
+                result = result + self.term()
+            elif token.type == MINUS:
+                self.eat(MINUS)
+                result = result - self.term()
+        
+        return result 
 
-        #a esperança é o que esse token seja um INT
-        right = self.current_token
-        self.eat(INTEGER)
-
-        """
-        depois do que acontece acima, o self.current_token é setado como EOF token
-        aqui a sequência INTEGER PLUS INTEGER ou INTEGER MINUS INTEGER de tokens foi encontrada e esse método pode retornar o resultado da adição das duas INT
-        efetivamente interpretando o client input
-        """
-        if op.type == PLUS:
-            result = left.value + right.value 
-        else:
-            result = left.value - rigut. value
-        return result
 
 def main():
     while True:
