@@ -1,6 +1,6 @@
 from interpreter import *
 from lexer import *
-from main import INTEGER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN
+from main import INTEGER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, EOF
 
 """ PARSER """
 
@@ -17,6 +17,11 @@ class Num(AST):
     def __init__(self, token):
         self.token = token 
         self.value = token.value
+
+class UnaryOp(AST):
+    def __init__(self, op, expr):
+        self.token = self.op = op 
+        self.expr = expr
 
 class Parser(object):
     def __init__(self, lexer):
@@ -35,9 +40,17 @@ class Parser(object):
             self.error()
 
     def factor(self):
-        """factor : INTEGER | LPAREN expr RPAREN"""
+        """factor : (PLUS | MINUS) factor | INTEGER | LPAREN expr RPAREN"""
         token = self.current_token
-        if token.type == INTEGER:
+        if token.type == PLUS:
+            self.eat(PLUS)
+            node = UnaryOp(token, self.factor())
+            return node
+        elif token.type == MINUS:
+            self.eat(MINUS)
+            node = UnaryOp(token, self.factor())
+            return node
+        elif token.type == INTEGER:
             self.eat(INTEGER)
             return Num(token)
         elif token.type == LPAREN:
@@ -81,4 +94,7 @@ class Parser(object):
         return node
 
     def parse(self):
-        return self.expr()
+        node = self.expr()
+        if self.current_token.type != EOF:
+            self.error()
+        return node

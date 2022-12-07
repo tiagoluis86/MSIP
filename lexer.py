@@ -7,14 +7,20 @@ from main import INTEGER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, EOF
 
 class Token(object):
     def __init__(self, type, value):
-        #token pode ser INTEGER, MUL, DIV ou EOF
-        self.type = type 
-        #token value pode ser 0,1,2,3,4,5,6,7,8,9,"+", "-", "*" ou */* ou None
-        self.value = value 
+        self.type = type
+        self.value = value
 
     def __str__(self):
-        #representação em str das class instances, tipo Token(INTEGER, 3)
-        return "Token({type}, {value}".format(type=self.type, value=repr(self.value))
+        """String representation of the class instance.
+        Examples:
+            Token(INTEGER, 3)
+            Token(PLUS, '+')
+            Token(MUL, '*')
+        """
+        return 'Token({type}, {value})'.format(
+            type=self.type,
+            value=repr(self.value)
+        )
 
     def __repr__(self):
         return self.__str__()
