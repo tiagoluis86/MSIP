@@ -1,4 +1,6 @@
-# interpreter
+MSIP
+--------------------------------------------------
+Meu Simples Interpretador de Pascal
 é um interpretador simples em python, em construção
 
 
