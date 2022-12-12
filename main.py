@@ -4,7 +4,11 @@ from core import *
 from interpreter import *
 
 #Token types
-INTEGER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, EOF = ('INTEGER', 'PLUS', 'MINUS', 'MUL', 'DIV', '(', ')', 'EOF')
+(INTEGER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, ID, ASSIGN,
+ BEGIN, END, SEMI, DOT, EOF) = (
+    'INTEGER', 'PLUS', 'MINUS', 'MUL', 'DIV', '(', ')', 'ID', 'ASSIGN',
+    'BEGIN', 'END', 'SEMI', 'DOT', 'EOF'
+)
 
 def main():
     while True:
