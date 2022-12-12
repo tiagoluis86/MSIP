@@ -1,7 +1,6 @@
 ### MSIP - Meu Simples Interpretador de Pascal
 
-from lexer import *
-from parser import *
+from core import *
 from interpreter import *
 
 #Token types

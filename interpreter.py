@@ -1,5 +1,4 @@
-from lexer import * 
-from parser import *
+from core import * 
 from main import PLUS, MINUS, MUL, DIV
 
 """ INTERPRETER """
