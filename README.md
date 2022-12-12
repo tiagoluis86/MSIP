@@ -7,6 +7,8 @@ Meu Simples Interpretador de Pascal
 o que faz
 ------------------------------------------
 
-atualmente interpreta programas simples em pascal.  
+atualmente interpreta programas simples em pascal, conhecendo uma gramática limitada:  
+![image](https://user-images.githubusercontent.com/70555750/207055117-38b4dff2-702a-4ae2-9aab-b26d369f7804.png)
+
 
 more details to do  
