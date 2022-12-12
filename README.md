@@ -2,7 +2,6 @@ MSIP
 --------------------------------------------------
 Meu Simples Interpretador de Pascal
 é um interpretador simples para Pascal, construído em Python  
-está em desenvolvimento
 
 
 o que faz
