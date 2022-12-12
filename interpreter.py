@@ -1,5 +1,5 @@
 from core import * 
-from main import PLUS, MINUS, MUL, DIV
+from main import PLUS,MINUS, MUL, INTEGER_DIV, FLOAT_DIV, FLOAT_DIV
 
 """ INTERPRETER """
 
@@ -14,11 +14,25 @@ class NodeVisitor(object):
 
 
 class Interpreter(NodeVisitor):
-
-    GLOBAL_SCOPE = {}
-
     def __init__(self, parser):
         self.parser = parser
+        self.GLOBAL_SCOPE = {}
+
+    def visit_Program(self, node):
+        self.visit(node.block)
+
+    def visit_Block(self, node):
+        for declaration in node.declarations:
+            self.visit(declaration)
+        self.visit(node.compound_statement)
+
+    def visit_VarDecl(self, node):
+        # Do nothing
+        pass
+
+    def visit_Type(self, node):
+        # Do nothing
+        pass
 
     def visit_BinOp(self, node):
         if node.op.type == PLUS:
@@ -27,8 +41,10 @@ class Interpreter(NodeVisitor):
             return self.visit(node.left) - self.visit(node.right)
         elif node.op.type == MUL:
             return self.visit(node.left) * self.visit(node.right)
-        elif node.op.type == DIV:
+        elif node.op.type == INTEGER_DIV:
             return self.visit(node.left) // self.visit(node.right)
+        elif node.op.type == FLOAT_DIV:
+            return float(self.visit(node.left)) / float(self.visit(node.right))
 
     def visit_Num(self, node):
         return node.value
@@ -50,11 +66,11 @@ class Interpreter(NodeVisitor):
 
     def visit_Var(self, node):
         var_name = node.value
-        val = self.GLOBAL_SCOPE.get(var_name)
-        if val is None:
+        var_value = self.GLOBAL_SCOPE.get(var_name)
+        if var_value is None:
             raise NameError(repr(var_name))
         else:
-            return val
+            return var_value
 
     def visit_NoOp(self, node):
         pass

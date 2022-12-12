@@ -1,5 +1,5 @@
 from interpreter import *
-from main import INTEGER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, EOF
+from main import INTEGER, REAL, INTEGER_CONST,REAL_CONST, PLUS,MINUS, MUL, INTEGER_DIV, FLOAT_DIV, FLOAT_DIV, LPAREN, RPAREN, ID, ASSIGN, BEGIN, END, SEMI, DOT, PROGRAM, VAR, COLON, COMMA, EOF 
 
 """ LEXER """
 
@@ -11,7 +11,7 @@ class Token(object):
     def __str__(self):
         """String representation of the class instance.
         Examples:
-            Token(INTEGER, 3)
+            Token(INTEGER_CONST, 3)
             Token(PLUS, '+')
             Token(MUL, '*')
         """
@@ -23,14 +23,21 @@ class Token(object):
     def __repr__(self):
         return self.__str__()
 
+
 RESERVED_KEYWORDS = {
+    'PROGRAM': Token('PROGRAM', 'PROGRAM'),
+    'VAR': Token('VAR', 'VAR'),
+    'DIV': Token('INTEGER_DIV', 'DIV'),
+    'INTEGER': Token('INTEGER', 'INTEGER'),
+    'REAL': Token('REAL', 'REAL'),
     'BEGIN': Token('BEGIN', 'BEGIN'),
     'END': Token('END', 'END'),
 }
 
+
 class Lexer(object):
     def __init__(self, text):
-        # Pega a string de input, ex: "3 * 5", "12 / 3 * 4", etc
+        # client string input, e.g. "4 + 2 * 3 - 6 / 2"
         self.text = text
         # self.pos is an index into self.text
         self.pos = 0
@@ -46,7 +53,7 @@ class Lexer(object):
             self.current_char = None  # Indicates end of input
         else:
             self.current_char = self.text[self.pos]
-    
+
     def peek(self):
         peek_pos = self.pos + 1
         if peek_pos > len(self.text) - 1:
@@ -58,13 +65,34 @@ class Lexer(object):
         while self.current_char is not None and self.current_char.isspace():
             self.advance()
 
-    def integer(self):        
-        """Returna uma INT de vários digitos do input"""
+    def skip_comment(self):
+        while self.current_char != '}':
+            self.advance()
+        self.advance()  # the closing curly brace
+
+    def number(self):
+        """Return a (multidigit) integer or float consumed from the input."""
         result = ''
         while self.current_char is not None and self.current_char.isdigit():
             result += self.current_char
             self.advance()
-        return int(result)   
+
+        if self.current_char == '.':
+            result += self.current_char
+            self.advance()
+
+            while (
+                self.current_char is not None and
+                self.current_char.isdigit()
+            ):
+                result += self.current_char
+                self.advance()
+
+            token = Token('REAL_CONST', float(result))
+        else:
+            token = Token('INTEGER_CONST', int(result))
+
+        return token
 
     def _id(self):
         """Handle identifiers and reserved keywords"""
@@ -87,11 +115,16 @@ class Lexer(object):
                 self.skip_whitespace()
                 continue
 
+            if self.current_char == '{':
+                self.advance()
+                self.skip_comment()
+                continue
+
             if self.current_char.isalpha():
                 return self._id()
 
             if self.current_char.isdigit():
-                return Token(INTEGER, self.integer())
+                return self.number()
 
             if self.current_char == ':' and self.peek() == '=':
                 self.advance()
@@ -101,6 +134,14 @@ class Lexer(object):
             if self.current_char == ';':
                 self.advance()
                 return Token(SEMI, ';')
+
+            if self.current_char == ':':
+                self.advance()
+                return Token(COLON, ':')
+
+            if self.current_char == ',':
+                self.advance()
+                return Token(COMMA, ',')
 
             if self.current_char == '+':
                 self.advance()
@@ -116,7 +157,7 @@ class Lexer(object):
 
             if self.current_char == '/':
                 self.advance()
-                return Token(DIV, '/')
+                return Token(FLOAT_DIV, '/')
 
             if self.current_char == '(':
                 self.advance()
@@ -139,21 +180,25 @@ class Lexer(object):
 class AST(object):
     pass
 
+
 class BinOp(AST):
     def __init__(self, left, op, right):
-        self.left = left 
-        self.token = self.op = op 
+        self.left = left
+        self.token = self.op = op
         self.right = right
+
 
 class Num(AST):
     def __init__(self, token):
-        self.token = token 
+        self.token = token
         self.value = token.value
+
 
 class UnaryOp(AST):
     def __init__(self, op, expr):
-        self.token = self.op = op 
+        self.token = self.op = op
         self.expr = expr
+
 
 class Compound(AST):
     """Represents a 'BEGIN ... END' block"""
@@ -167,6 +212,7 @@ class Assign(AST):
         self.token = self.op = op
         self.right = right
 
+
 class Var(AST):
     """The Var node is constructed out of ID token."""
     def __init__(self, token):
@@ -176,6 +222,31 @@ class Var(AST):
 
 class NoOp(AST):
     pass
+
+
+class Program(AST):
+    def __init__(self, name, block):
+        self.name = name
+        self.block = block
+
+
+class Block(AST):
+    def __init__(self, declarations, compound_statement):
+        self.declarations = declarations
+        self.compound_statement = compound_statement
+
+
+class VarDecl(AST):
+    def __init__(self, var_node, type_node):
+        self.var_node = var_node
+        self.type_node = type_node
+
+
+class Type(AST):
+    def __init__(self, token):
+        self.token = token
+        self.value = token.value
+
 
 class Parser(object):
     def __init__(self, lexer):
@@ -197,9 +268,66 @@ class Parser(object):
             self.error()
 
     def program(self):
-        """program : compound_statement DOT"""
-        node = self.compound_statement()
+        """program : PROGRAM variable SEMI block DOT"""
+        self.eat(PROGRAM)
+        var_node = self.variable()
+        prog_name = var_node.value
+        self.eat(SEMI)
+        block_node = self.block()
+        program_node = Program(prog_name, block_node)
         self.eat(DOT)
+        return program_node
+
+    def block(self):
+        """block : declarations compound_statement"""
+        declaration_nodes = self.declarations()
+        compound_statement_node = self.compound_statement()
+        node = Block(declaration_nodes, compound_statement_node)
+        return node
+
+    def declarations(self):
+        """declarations : VAR (variable_declaration SEMI)+
+                        | empty
+        """
+        declarations = []
+        if self.current_token.type == VAR:
+            self.eat(VAR)
+            while self.current_token.type == ID:
+                var_decl = self.variable_declaration()
+                declarations.extend(var_decl)
+                self.eat(SEMI)
+
+        return declarations
+
+    def variable_declaration(self):
+        """variable_declaration : ID (COMMA ID)* COLON type_spec"""
+        var_nodes = [Var(self.current_token)]  # first ID
+        self.eat(ID)
+
+        while self.current_token.type == COMMA:
+            self.eat(COMMA)
+            var_nodes.append(Var(self.current_token))
+            self.eat(ID)
+
+        self.eat(COLON)
+
+        type_node = self.type_spec()
+        var_declarations = [
+            VarDecl(var_node, type_node)
+            for var_node in var_nodes
+        ]
+        return var_declarations
+
+    def type_spec(self):
+        """type_spec : INTEGER
+                     | REAL
+        """
+        token = self.current_token
+        if self.current_token.type == INTEGER:
+            self.eat(INTEGER)
+        else:
+            self.eat(REAL)
+        node = Type(token)
         return node
 
     def compound_statement(self):
@@ -228,9 +356,6 @@ class Parser(object):
         while self.current_token.type == SEMI:
             self.eat(SEMI)
             results.append(self.statement())
-
-        if self.current_token.type == ID:
-            self.error()
 
         return results
 
@@ -289,15 +414,17 @@ class Parser(object):
         return node
 
     def term(self):
-        """term : factor ((MUL | DIV) factor)*"""
+        """term : factor ((MUL | INTEGER_DIV | FLOAT_DIV) factor)*"""
         node = self.factor()
 
-        while self.current_token.type in (MUL, DIV):
+        while self.current_token.type in (MUL, INTEGER_DIV, FLOAT_DIV):
             token = self.current_token
             if token.type == MUL:
                 self.eat(MUL)
-            elif token.type == DIV:
-                self.eat(DIV)
+            elif token.type == INTEGER_DIV:
+                self.eat(INTEGER_DIV)
+            elif token.type == FLOAT_DIV:
+                self.eat(FLOAT_DIV)
 
             node = BinOp(left=node, op=token, right=self.factor())
 
@@ -306,7 +433,8 @@ class Parser(object):
     def factor(self):
         """factor : PLUS factor
                   | MINUS factor
-                  | INTEGER
+                  | INTEGER_CONST
+                  | REAL_CONST
                   | LPAREN expr RPAREN
                   | variable
         """
@@ -319,8 +447,11 @@ class Parser(object):
             self.eat(MINUS)
             node = UnaryOp(token, self.factor())
             return node
-        elif token.type == INTEGER:
-            self.eat(INTEGER)
+        elif token.type == INTEGER_CONST:
+            self.eat(INTEGER_CONST)
+            return Num(token)
+        elif token.type == REAL_CONST:
+            self.eat(REAL_CONST)
             return Num(token)
         elif token.type == LPAREN:
             self.eat(LPAREN)
@@ -333,7 +464,12 @@ class Parser(object):
 
     def parse(self):
         """
-        program : compound_statement DOT
+        program : PROGRAM variable SEMI block DOT
+        block : declarations compound_statement
+        declarations : VAR (variable_declaration SEMI)+
+                     | empty
+        variable_declaration : ID (COMMA ID)* COLON type_spec
+        type_spec : INTEGER | REAL
         compound_statement : BEGIN statement_list END
         statement_list : statement
                        | statement SEMI statement_list
@@ -342,11 +478,12 @@ class Parser(object):
                   | empty
         assignment_statement : variable ASSIGN expr
         empty :
-        expr: term ((PLUS | MINUS) term)*
-        term: factor ((MUL | DIV) factor)*
+        expr : term ((PLUS | MINUS) term)*
+        term : factor ((MUL | INTEGER_DIV | FLOAT_DIV) factor)*
         factor : PLUS factor
                | MINUS factor
-               | INTEGER
+               | INTEGER_CONST
+               | REAL_CONST
                | LPAREN expr RPAREN
                | variable
         variable: ID

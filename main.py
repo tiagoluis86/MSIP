@@ -3,30 +3,46 @@
 from core import *
 from interpreter import *
 
-#Token types
-(INTEGER, PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, ID, ASSIGN,
- BEGIN, END, SEMI, DOT, EOF) = (
-    'INTEGER', 'PLUS', 'MINUS', 'MUL', 'DIV', '(', ')', 'ID', 'ASSIGN',
-    'BEGIN', 'END', 'SEMI', 'DOT', 'EOF'
-)
+#
+# EOF (end-of-file) token is used to indicate that
+# there is no more input left for lexical analysis
+INTEGER       = 'INTEGER'
+REAL          = 'REAL'
+INTEGER_CONST = 'INTEGER_CONST'
+REAL_CONST    = 'REAL_CONST'
+PLUS          = 'PLUS'
+MINUS         = 'MINUS'
+MUL           = 'MUL'
+INTEGER_DIV   = 'INTEGER_DIV'
+FLOAT_DIV     = 'FLOAT_DIV'
+LPAREN        = 'LPAREN'
+RPAREN        = 'RPAREN'
+ID            = 'ID'
+ASSIGN        = 'ASSIGN'
+BEGIN         = 'BEGIN'
+END           = 'END'
+SEMI          = 'SEMI'
+DOT           = 'DOT'
+PROGRAM       = 'PROGRAM'
+VAR           = 'VAR'
+COLON         = 'COLON'
+COMMA         = 'COMMA'
+EOF           = 'EOF'
+
+
 
 def main():
-    while True:
-        try:
-            try:
-                text = input('spi> ')
-            except NameError:  # Python3
-                text = input('spi> ')
-        except EOFError:
-            break
-        if not text:
-            continue
+    import sys
+    text = open(sys.argv[1], 'r').read()
 
-        lexer = Lexer(text)
-        parser = Parser(lexer)
-        interpreter = Interpreter(parser)
-        result = interpreter.interpret()
-        print(result)
+    lexer = Lexer(text)
+    parser = Parser(lexer)
+    interpreter = Interpreter(parser)
+    result = interpreter.interpret()
 
-if __name__ == "__main__":
+    for k, v in sorted(interpreter.GLOBAL_SCOPE.items()):
+        print('{} = {}'.format(k, v))
+
+
+if __name__ == '__main__':
     main()
